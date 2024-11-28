@@ -7,6 +7,8 @@ import 'package:orderbook_viewer/model/v1/orderbookSnapshot.dart';
 import 'package:orderbook_viewer/model/v1/transaction.dart';
 import 'package:orderbook_viewer/model/v2/orderbook.dart';
 import 'package:orderbook_viewer/model/v2/trade.dart';
+import 'package:orderbook_viewer/ui/flashing_orderbook_listview.dart';
+import 'package:orderbook_viewer/ui/trade_listview.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 class OrderBookPage extends StatefulWidget {
@@ -18,16 +20,15 @@ class _OrderBookPageState extends State<OrderBookPage> {
   late WebSocketChannel channelV1;
   List<PriceSize> orderbookAskListV1 = [];
   List<PriceSize> orderbookBidListV1 = [];
-  Queue<Data> tradeQueueV1 = Queue<Data>();
+  Queue<PriceSize> tradeQueueV1 = Queue<PriceSize>();
 
   late WebSocketChannel channelV2;
-  List<OrderbookUnit> orderbookUnitListV2 = [];
-  Queue<Trade> tradeQueueV2 = Queue<Trade>();
+  List<PriceSize> orderbookAskListV2 = [];
+  List<PriceSize> orderbookBidListV2 = [];
+  Queue<PriceSize> tradeQueueV2 = Queue<PriceSize>();
 
   // 새로운 trade 추가 (최대 10개 유지)
   void addTradeV1(List<Data> dataList) {
-    print('yeonseok, addTradeV1: size : ${dataList.length}');
-
     final addedSize = tradeQueueV1.length + dataList.length;
     final needToRemove = addedSize - 10;
 
@@ -35,22 +36,22 @@ class _OrderBookPageState extends State<OrderBookPage> {
       tradeQueueV1.removeFirst();
     }
 
-    tradeQueueV1.addAll(dataList);
+    tradeQueueV1.addAll(dataList.map((data) => PriceSize(price: data.contPrice, size: data.contQty)));
   }
 
   void addTradeV2(Trade trade) {
     if (tradeQueueV2.length >= 10) {
       tradeQueueV2.removeFirst(); // 가장 오래된 항목 제거
     }
-    tradeQueueV2.addLast(trade); // 새로운 항목 추가
+    tradeQueueV2.addLast(PriceSize(price: trade.tradePrice, size: trade.tradeVolume)); // 새로운 항목 추가
   }
 
   // trade 데이터를 역순으로 가져오기
-  List<Data> getReversedTradesV1() {
+  List<PriceSize> getReversedTradesV1() {
     return tradeQueueV1.toList().reversed.toList();
   }
 
-  List<Trade> getReversedTradesV2() {
+  List<PriceSize> getReversedTradesV2() {
     return tradeQueueV2.toList().reversed.toList();
   }
 
@@ -119,10 +120,12 @@ class _OrderBookPageState extends State<OrderBookPage> {
       {
         'type': 'orderbook',
         'codes': ['KRW-ETH'],
+        'isOnlyRealtime': true
       },
       {
         'type': 'trade',
-        'codes': ['KRW-ETH']
+        'codes': ['KRW-ETH'],
+        'isOnlyRealtime': true
       },
     ]));
 
@@ -139,7 +142,10 @@ class _OrderBookPageState extends State<OrderBookPage> {
       if (jsonMap['type'] == 'orderbook') {
         final orderbook = Orderbook.fromJson(jsonMap);
         setState(() {
-          orderbookUnitListV2 = orderbook.orderbookUnitList.sublist(0, 10);
+          final orderbookUnitListV2 = orderbook.orderbookUnitList.sublist(0, 10);
+
+          orderbookAskListV2 = orderbookUnitListV2.map((unit) => PriceSize(price: unit.askPrice, size: unit.askSize)).toList();
+          orderbookBidListV2 = orderbookUnitListV2.map((unit) => PriceSize(price: unit.bidPrice, size: unit.bidSize)).toList();
         });
       } else if (jsonMap['type'] == 'trade') {
         final trade = Trade.fromJson(jsonMap);
@@ -176,229 +182,21 @@ class _OrderBookPageState extends State<OrderBookPage> {
             ),
             Row(
               children: [
-                Expanded(child: orderbookListViewV1()),
-                Expanded(child: orderbookListViewV2()),
+                Expanded(child: FlashingOrderbookListView(orderbookAskListV1, orderbookBidListV1)),
+                Expanded(child: FlashingOrderbookListView(orderbookAskListV2, orderbookBidListV2)),
               ],
             ),
             Expanded(
               child: Row(
                 children: [
-                  Flexible(child: tradeListViewV1()),
-                  Flexible(child: tradeListViewV2()),
+                  Flexible(child: TradeListView(getReversedTradesV1())),
+                  Flexible(child: TradeListView(getReversedTradesV2())),
                 ],
               ),
             )
           ],
         ),
       ),
-    );
-  }
-
-  ListView tradeListViewV1() {
-    return ListView.builder(
-      itemCount: getReversedTradesV1().length,
-      itemBuilder: (context, index) {
-        final trade = getReversedTradesV1()[index];
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            Text(
-              trade.contPrice,
-              style: TextStyle(color: Colors.black, fontSize: 14),
-            ),
-            SizedBox(
-              width: 100,
-              child: Text(
-                trade.contQty,
-                textAlign: TextAlign.end,
-                style: TextStyle(color: Colors.black, fontSize: 14),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  ListView tradeListViewV2() {
-    return ListView.builder(
-      itemCount: getReversedTradesV2().length,
-      itemBuilder: (context, index) {
-        final trade = getReversedTradesV2()[index];
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            Text(
-              '${trade.tradePrice.toStringAsFixed(0)}',
-              style: TextStyle(color: Colors.black, fontSize: 14),
-            ),
-            SizedBox(
-              width: 100,
-              child: Text(
-                '${trade.tradeVolume.toStringAsFixed(4)}',
-                textAlign: TextAlign.end,
-                style: TextStyle(color: Colors.black, fontSize: 14),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Column orderbookListViewV1() {
-    return Column(
-      children: [
-        // 매도 리스트
-        Container(
-          color: Colors.blue.withOpacity(0.1),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                height: 260, // 매도 리스트의 고정 높이
-                child: ListView.builder(
-                  itemCount: orderbookAskListV1.length,
-                  itemBuilder: (context, index) {
-                    final unit = orderbookAskListV1[orderbookAskListV1.length - index - 1];
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        Text(
-                          unit.price,
-                          style: TextStyle(color: Colors.blue, fontSize: 18),
-                        ),
-                        SizedBox(
-                          width: 100,
-                          child: Text(
-                            unit.size,
-                            textAlign: TextAlign.end,
-                            style: TextStyle(color: Colors.black, fontSize: 18),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // 매수 리스트
-        Container(
-          color: Colors.red.withOpacity(0.1),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                height: 260, // 매수 리스트의 고정 높이
-                child: ListView.builder(
-                  itemCount: orderbookBidListV1.length,
-                  itemBuilder: (context, index) {
-                    final unit = orderbookBidListV1[index];
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        Text(
-                          unit.price,
-                          style: TextStyle(color: Colors.blue, fontSize: 18),
-                        ),
-                        SizedBox(
-                          width: 100,
-                          child: Text(
-                            unit.size,
-                            textAlign: TextAlign.end,
-                            style: TextStyle(color: Colors.black, fontSize: 18),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Column orderbookListViewV2() {
-    return Column(
-      children: [
-        // 매도 리스트
-        Container(
-          color: Colors.blue.withOpacity(0.1),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                height: 260, // 매도 리스트의 고정 높이
-                child: ListView.builder(
-                  itemCount: orderbookUnitListV2.length,
-                  itemBuilder: (context, index) {
-                    final unit = orderbookUnitListV2[orderbookUnitListV2.length - index - 1];
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${unit.askPrice.toStringAsFixed(0)}',
-                          style: TextStyle(color: Colors.blue, fontSize: 18),
-                        ),
-                        SizedBox(
-                          width: 100,
-                          child: Text(
-                            '${unit.askSize.toStringAsFixed(4)}',
-                            textAlign: TextAlign.end,
-                            style: TextStyle(color: Colors.black, fontSize: 18),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // 매수 리스트
-        Container(
-          color: Colors.red.withOpacity(0.1),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                height: 260, // 매수 리스트의 고정 높이
-                child: ListView.builder(
-                  itemCount: orderbookUnitListV2.length,
-                  itemBuilder: (context, index) {
-                    final unit = orderbookUnitListV2[index];
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${unit.bidPrice.toStringAsFixed(0)}',
-                          style: TextStyle(color: Colors.blue, fontSize: 18),
-                        ),
-                        SizedBox(
-                          width: 100,
-                          child: Text(
-                            '${unit.bidSize.toStringAsFixed(4)}',
-                            textAlign: TextAlign.end,
-                            style: TextStyle(color: Colors.black, fontSize: 18),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }

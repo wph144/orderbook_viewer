@@ -27,8 +27,8 @@ class Content {
 class Data {
   final String symbol;
   final String buySellGb;
-  final String contPrice;
-  final String contQty;
+  final double contPrice;
+  final double contQty;
   final String contAmt;
   final String contDtm;
   final String updn;
@@ -47,8 +47,8 @@ class Data {
     return Data(
       symbol: json['symbol'],
       buySellGb: json['buySellGb'],
-      contPrice: json['contPrice'],
-      contQty: json['contQty'],
+      contPrice: json['contPrice'] is String ? double.parse(json['contPrice']) : json['contPrice'] as double,
+      contQty: json['contQty'] is String ? double.parse(json['contQty']) : json['contQty'] as double,
       contAmt: json['contAmt'],
       contDtm: json['contDtm'],
       updn: json['updn'],

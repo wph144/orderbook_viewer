@@ -39,15 +39,15 @@ class Content {
 }
 
 class PriceSize {
-  final String price;
-  final String size;
+  final double price;
+  final double size;
 
   PriceSize({required this.price, required this.size});
 
   factory PriceSize.fromJsonList(List<dynamic> jsonList) {
     return PriceSize(
-      price: jsonList[0] as String,
-      size: jsonList[1] as String,
+      price: jsonList[0] is String ? double.parse(jsonList[0]) : jsonList[0] as double,
+      size: jsonList[1] is String ? double.parse(jsonList[1]) : jsonList[1] as double,
     );
   }
 }
