@@ -17,7 +17,7 @@ class OrderbookSnapshot {
 
 class Content {
   final String symbol;
-  final String datetime;
+  final int datetime;
   final List<PriceSize> asks;
   final List<PriceSize> bids;
 
@@ -31,7 +31,7 @@ class Content {
   factory Content.fromJson(Map<String, dynamic> json) {
     return Content(
       symbol: json['symbol'],
-      datetime: json['datetime'],
+      datetime: json['datetime'] is String ? int.parse(json['datetime']) : json['datetime'] as int,
       asks: (json['asks'] as List).map((ask) => PriceSize.fromJsonList(ask as List)).toList(),
       bids: (json['bids'] as List).map((bid) => PriceSize.fromJsonList(bid as List)).toList(),
     );

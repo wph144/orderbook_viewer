@@ -14,6 +14,7 @@ class OrderbookListView extends StatelessWidget {
       children: [
         // 매도 리스트
         Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
           color: Colors.blue.withOpacity(0.1),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -50,6 +51,7 @@ class OrderbookListView extends StatelessWidget {
 
         // 매수 리스트
         Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
           color: Colors.red.withOpacity(0.1),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

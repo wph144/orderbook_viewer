@@ -8,6 +8,7 @@ import 'package:orderbook_viewer/model/v1/transaction.dart';
 import 'package:orderbook_viewer/model/v2/orderbook.dart';
 import 'package:orderbook_viewer/model/v2/trade.dart';
 import 'package:orderbook_viewer/ui/flashing_orderbook_listview.dart';
+import 'package:orderbook_viewer/ui/orderbook_listview.dart';
 import 'package:orderbook_viewer/ui/trade_listview.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -18,11 +19,13 @@ class OrderBookPage extends StatefulWidget {
 
 class _OrderBookPageState extends State<OrderBookPage> {
   late WebSocketChannel channelV1;
+  int orderbookTimestampV1 = 0;
   List<PriceSize> orderbookAskListV1 = [];
   List<PriceSize> orderbookBidListV1 = [];
   Queue<PriceSize> tradeQueueV1 = Queue<PriceSize>();
 
   late WebSocketChannel channelV2;
+  int orderbookTimestampV2 = 0;
   List<PriceSize> orderbookAskListV2 = [];
   List<PriceSize> orderbookBidListV2 = [];
   Queue<PriceSize> tradeQueueV2 = Queue<PriceSize>();
@@ -83,17 +86,14 @@ class _OrderBookPageState extends State<OrderBookPage> {
     }));
 
     channelV1.stream.listen((encodedData) {
-      // Uint8List로 변환
-      // Uint8List uint8Data = Uint8List.fromList(encodedData);
-      //
-      // // UTF-8 디코딩
-      // String jsonString = utf8.decode(uint8Data);
       // print(encodedData);
       final jsonMap = jsonDecode(encodedData);
 
       if (jsonMap['type'] == 'orderbooksnapshot') {
         final orderbook = OrderbookSnapshot.fromJson(jsonMap);
         setState(() {
+          orderbookTimestampV1 = orderbook.content.datetime ~/ 1000;
+
           orderbookAskListV1 = orderbook.content.asks.sublist(0, 10);
           orderbookBidListV1 = orderbook.content.bids.sublist(0, 10);
         });
@@ -142,6 +142,8 @@ class _OrderBookPageState extends State<OrderBookPage> {
       if (jsonMap['type'] == 'orderbook') {
         final orderbook = Orderbook.fromJson(jsonMap);
         setState(() {
+          orderbookTimestampV2 = orderbook.timestamp;
+
           final orderbookUnitListV2 = orderbook.orderbookUnitList.sublist(0, 10);
 
           orderbookAskListV2 = orderbookUnitListV2.map((unit) => PriceSize(price: unit.askPrice, size: unit.askSize)).toList();
@@ -166,6 +168,9 @@ class _OrderBookPageState extends State<OrderBookPage> {
 
   @override
   Widget build(BuildContext context) {
+    print('yeonseok, v1: $orderbookTimestampV1');
+    print('yeonseok, v2: $orderbookTimestampV2');
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Orderbook'),
@@ -174,16 +179,16 @@ class _OrderBookPageState extends State<OrderBookPage> {
         padding: const EdgeInsets.all(8.0),
         child: Column(
           children: [
-            const Row(
+            Row(
               children: [
-                Expanded(child: Text("v1")),
-                Expanded(child: Text("v2")),
+                Expanded(child: Text('v1 ${(orderbookTimestampV1 > orderbookTimestampV2 ? '️' : '+${orderbookTimestampV2 - orderbookTimestampV1}ms')}')),
+                Expanded(child: Text('v2 ${(orderbookTimestampV1 < orderbookTimestampV2 ? '️' : '+${orderbookTimestampV1 - orderbookTimestampV2}ms')}')),
               ],
             ),
             Row(
               children: [
-                Expanded(child: FlashingOrderbookListView(orderbookAskListV1, orderbookBidListV1)),
-                Expanded(child: FlashingOrderbookListView(orderbookAskListV2, orderbookBidListV2)),
+                Expanded(child: OrderbookListView(orderbookAskListV1, orderbookBidListV1)),
+                Expanded(child: OrderbookListView(orderbookAskListV2, orderbookBidListV2)),
               ],
             ),
             Expanded(
