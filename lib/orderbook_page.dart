@@ -23,7 +23,7 @@ class _OrderBookPageState extends State<OrderBookPage> {
   }
 
   void resubscribe() {
-    socketDataLeft.connectToV2();
+    socketDataLeft.connectToV1();
     socketDataRight.connectToV2();
   }
 
@@ -36,9 +36,6 @@ class _OrderBookPageState extends State<OrderBookPage> {
 
   @override
   Widget build(BuildContext context) {
-    print('yeonseok, v1: ${socketDataLeft.orderbookTimestamp}');
-    print('yeonseok, v2: ${socketDataRight.orderbookTimestamp}');
-
     return Scaffold(
       appBar: AppBar(
         title: Text('Orderbook'),
@@ -51,10 +48,10 @@ class _OrderBookPageState extends State<OrderBookPage> {
               children: [
                 Expanded(
                     child: Text(
-                        'v1 ${(socketDataLeft.orderbookTimestamp > socketDataRight.orderbookTimestamp ? '️' : '+${socketDataRight.orderbookTimestamp - socketDataLeft.orderbookTimestamp}ms')}')),
+                        '${socketDataLeft.displayVersionString} ${(socketDataLeft.orderbookTimestamp > socketDataRight.orderbookTimestamp ? '️' : '+${socketDataRight.orderbookTimestamp - socketDataLeft.orderbookTimestamp}ms')}')),
                 Expanded(
                     child: Text(
-                        'v2 ${(socketDataLeft.orderbookTimestamp < socketDataRight.orderbookTimestamp ? '️' : '+${socketDataLeft.orderbookTimestamp - socketDataRight.orderbookTimestamp}ms')}')),
+                        '${socketDataRight.displayVersionString} ${(socketDataLeft.orderbookTimestamp < socketDataRight.orderbookTimestamp ? '️' : '+${socketDataLeft.orderbookTimestamp - socketDataRight.orderbookTimestamp}ms')}')),
               ],
             ),
             Row(

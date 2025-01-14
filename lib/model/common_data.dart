@@ -15,12 +15,15 @@ class SocketData {
   List<PriceSize> orderbookAskList = [];
   List<PriceSize> orderbookBidList = [];
   Queue<PriceSize> tradeQueue = Queue<PriceSize>();
+  String displayVersionString = '';
 
   void Function()? onUpdate;
 
   SocketData({this.onUpdate});
 
   void connectToV1() {
+    displayVersionString = 'v1';
+
     channel = WebSocketChannel.connect(
       Uri.parse('wss://pubwss.bithumb.com/pub/ws'),
     );
@@ -59,6 +62,8 @@ class SocketData {
   }
 
   void connectToV2() {
+    displayVersionString = 'v2';
+
     channel = WebSocketChannel.connect(
       Uri.parse('wss://ws-api.bithumb.com/websocket/v1'),
     );
