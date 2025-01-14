@@ -1,10 +1,12 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:orderbook_viewer/model/v1/orderbookSnapshot.dart';
 
 class OrderbookListView extends StatelessWidget {
   final List<PriceSize> askList;
   final List<PriceSize> bidList;
+
+  var fontSize = 16.0;
+  var heightOfList = 230.0;
 
   OrderbookListView(this.askList, this.bidList);
 
@@ -20,26 +22,23 @@ class OrderbookListView extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(
-                height: 260, // 매도 리스트의 고정 높이
+                height: heightOfList, // 매도 리스트의 고정 높이
                 child: ListView.builder(
                   itemCount: askList.length,
                   itemBuilder: (context, index) {
                     final unit = askList[askList.length - index - 1];
                     return Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
                           unit.price.toStringAsFixed(0),
-                          style: const TextStyle(color: Colors.blue, fontSize: 18),
+                          style: TextStyle(color: Colors.blue, fontSize: fontSize),
                         ),
-                        SizedBox(
-                          width: 100,
-                          child: Text(
-                            unit.size.toStringAsFixed(4),
-                            textAlign: TextAlign.end,
-                            style: const TextStyle(color: Colors.black, fontSize: 18),
-                          ),
-                        ),
+                        Text(
+                          unit.size.toStringAsFixed(4),
+                          textAlign: TextAlign.end,
+                          style: TextStyle(color: Colors.black, fontSize: fontSize),
+                        )
                       ],
                     );
                   },
@@ -57,25 +56,22 @@ class OrderbookListView extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(
-                height: 260, // 매수 리스트의 고정 높이
+                height: heightOfList, // 매수 리스트의 고정 높이
                 child: ListView.builder(
                   itemCount: bidList.length,
                   itemBuilder: (context, index) {
                     final unit = bidList[index];
                     return Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
                           unit.price.toStringAsFixed(0),
-                          style: const TextStyle(color: Colors.blue, fontSize: 18),
+                          style: TextStyle(color: Colors.blue, fontSize: fontSize),
                         ),
-                        SizedBox(
-                          width: 100,
-                          child: Text(
-                            unit.size.toStringAsFixed(4),
-                            textAlign: TextAlign.end,
-                            style: const TextStyle(color: Colors.black, fontSize: 18),
-                          ),
+                        Text(
+                          unit.size.toStringAsFixed(4),
+                          textAlign: TextAlign.end,
+                          style: TextStyle(color: Colors.black, fontSize: fontSize),
                         ),
                       ],
                     );
